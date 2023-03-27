@@ -1,0 +1,128 @@
+Short tutorial to  work with mongo db 
+
+Connecting to Cloud Mongo Server ::--
+
+we get important four parameters from cloud servers settings or connection string 
+HOST
+PORT
+USERNAME
+PASSWORD
+
+
+
+Step 1 : add dependency in pom as 
+mongo-java-driver
+spring-data-mongodb
+
+
+Step 2 : create mongo config class under config package 
+
+
+import com.mongodb.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.MongoDbFactory;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.SimpleMongoDbFactory;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Configuration
+@EnableMongoRepositories(basePackages = {
+    "com.company.client/project.module.submodule.dao"
+})
+public class MongoConfig {
+
+    @Value("${MONGO_STORE_HOST}")
+    private String mongoHost;
+
+    @Value("${MONGO_STORE_PORT}")
+    private int mongoPort;
+
+    @Value("${STORE_MONGO_USERNAME}")
+    private String username;
+
+    @Value("${STORE_MONGO_PASS}")
+    private String password;
+
+    @Value("${MONGO.STORE.DBNNAME}")
+    private String storeDatabase;
+
+    @Value("${MONGO.SETTINGS.CONNECTIONSPERHOST}")
+    private Integer connectionsPerHost;
+
+    @Value("${MONGO.SETTINGS.MAXWAITTIME}")
+    private Integer maxWaitTime;
+
+    @Value("${MONGO.SETTINGS.CONNECTIONTIMEOUT}")
+    private Integer connectTimeOut;
+
+    @Value("${MONGO.SETTINGS.THREADS.ALLOWEDTOBLOCK}")
+    private Integer threadsAllowedToBlockConnection;
+
+    @Value("${MONGO.SETTINGS.CONNECTION.IDLE.TIME}")
+    private Integer connectionIdleTime;
+
+    @Value("${MONGO.SETTINGS.HEARTBEAT.FREQUENCY}")
+    private Integer heartbeatFrequency;
+
+    @Bean
+    public MongoClientOptions mongoOptions(){
+        return new MongoClientOptions.Builder()
+            .connectionsPerHost(connectionsPerHost)
+            .maxConnectionIdleTime(connectionIdleTime)//25 min
+            .maxWaitTime(maxWaitTime)
+            .heartbeatFrequency(heartbeatFrequency)
+            .connectTimeout(connectTimeOut)
+            .threadsAllowedToBlockForConnectionMultiplier(threadsAllowedToBlockConnection)
+            .readPreference(ReadPreference.primaryPreferred()).sslEnabled(true)
+            .build();
+    }
+
+    @Bean
+    public MongoDbFactory mongoStoreFactory() throws Exception {
+        return createSimpleMongoDbFactory(storeDatabase);
+    }
+
+    @Bean
+    public MongoTemplate mongoMenuOrderingTemplate() throws Exception {
+        return new MongoTemplate(mongoStoreFactory());
+    }
+
+
+    private SimpleMongoDbFactory createSimpleMongoDbFactory(String databaseName) {
+        return new SimpleMongoDbFactory(createMongoClient(databaseName), databaseName);
+    }
+
+    private MongoClient createMongoClient(String databaseName) {
+    	return new MongoClient(getServerAddresses(), createMongoCredentials(databaseName), mongoOptions()); 
+    }
+
+    private List<ServerAddress> getServerAddresses(){
+        List<ServerAddress> toReturn = new ArrayList<>();
+        toReturn.add(new ServerAddress(mongoHost, mongoPort));
+        return toReturn;
+    }
+
+    private MongoCredential createMongoCredentials(String databaseName) {
+        return MongoCredential.createCredential(username, databaseName, password.toCharArray());
+    }
+
+}
+
+
+
+
+Step 3 : add and define above values in app properties file.
+
+__db.settings.jdbcUrl=jdbc:sqlserver://___.database.windows.net:1433;database=____;encrypt=true;trustServerCertificate=true;sendStringParametersAsUnicode=false
+__db.settings.user=
+__db.settings.pass=
+MONGO_STORE_HOST=____.documents.azure.com
+STORE_MONGO_USERNAME=____
+STORE_MONGO_PASS=____
+
+
